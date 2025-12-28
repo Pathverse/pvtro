@@ -1,3 +1,9 @@
-## 1.0.0
+## 0.1.2
 
-- Initial version.
+- Initial pub.dev release
+
+## 0.1.0
+
+- Package discovery: scans project for slang-enabled packages
+- Wrapper generation: generates nested `TranslationProvider` wrappers
+- CLI with `--output`, `--verbose`, and `--help` options
