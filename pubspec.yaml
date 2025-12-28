@@ -1,6 +1,6 @@
 name: pvtro
 description: CLI tool for coordinating slang translations across Flutter packages.
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/Pathverse/pvtro
 
 
