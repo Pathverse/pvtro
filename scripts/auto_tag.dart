@@ -132,7 +132,15 @@ Future<void> createTag(String version) async {
   
   if (result.exitCode == 0) {
     print('Created tag: $tagName');
-    print('Run "git push origin $tagName" to push the tag and trigger publish.');
+    
+    // Auto-push the tag to trigger the publish workflow
+    final pushResult = await Process.run('git', ['push', 'origin', tagName]);
+    if (pushResult.exitCode == 0) {
+      print('Pushed tag $tagName to origin. Publish workflow triggered.');
+    } else {
+      print('Error pushing tag: ${pushResult.stderr}');
+      print('Run "git push origin $tagName" manually to trigger publish.');
+    }
   } else {
     print('Error creating tag: ${result.stderr}');
   }
