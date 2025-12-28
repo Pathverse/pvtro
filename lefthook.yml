@@ -1,0 +1,9 @@
+# Lefthook configuration
+# https://github.com/evilmartians/lefthook
+
+post-commit:
+  commands:
+    auto-tag:
+      run: dart run scripts/auto_tag.dart "{1}"
+      env:
+        LEFTHOOK_VERBOSE: 1
