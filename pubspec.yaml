@@ -3,7 +3,6 @@ description: CLI tool for coordinating slang translations across Flutter package
 version: 0.1.3
 repository: https://github.com/Pathverse/pvtro
 
-
 environment:
   sdk: ^3.0.0
 
