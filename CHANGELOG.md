@@ -1,3 +1,6 @@
+## 0.1.4
+- lower install requirements
+
 ## 0.1.2
 
 - Initial pub.dev release
