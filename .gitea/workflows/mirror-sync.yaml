@@ -21,7 +21,7 @@ jobs:
           TARGET_URL: ${{ vars.LOCAL_PUB_REGISTRY }}
         run: |
           # 1. Authenticate with the variable URL
-          dart pub token add "$TARGET_URL" --token "$GITEA_TOKEN"
+          dart pub token add "$TARGET_URL" --env-var=GITEA_TOKEN
           
           # 2. Universal swap: replaces whatever 'publish_to' exists 
           # (even 'none') with the Org-wide registry variable.
