@@ -1,0 +1,30 @@
+name: Auto-Publish to Org Registry
+on:
+  - mirror_update
+
+jobs:
+  publish:
+    runs-on: local
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: https://github.com/dart-lang/setup-dart@v1
+
+      - name: Dynamic Swap & Publish
+        env:
+          # Pulls from Org Secrets
+          GITEA_TOKEN: ${{ secrets.GITEA_PUB_TOKEN }}
+          # Pulls from Org Variables
+          TARGET_URL: ${{ vars.LOCAL_PUB_REGISTRY }}
+        run: |
+          # 1. Authenticate with the variable URL
+          dart pub token add "$TARGET_URL" --token "$GITEA_TOKEN"
+          
+          # 2. Universal swap: replaces whatever 'publish_to' exists 
+          # (even 'none') with the Org-wide registry variable.
+          sed -i "s|publish_to:.*|publish_to: $TARGET_URL|" pubspec.yaml
+          
+          # 3. Publish and ignore if the version already exists (exit code 0)
+          dart pub publish --force || echo "Version already exists in registry, skipping."
