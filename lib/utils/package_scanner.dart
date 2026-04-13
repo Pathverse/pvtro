@@ -2,6 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
+/// Convert a filesystem-relative path into a POSIX import path.
+String _toPosixImportPath(String relativePath) {
+  return p.posix.joinAll(p.split(relativePath));
+}
+
 /// Package info from package_config.json
 class PackageInfo {
   final String name;
@@ -111,7 +116,9 @@ Future<String?> findStringsFile(String packagePath, String packageName) async {
     final file = File(p.join(packagePath, relativePath));
     if (await file.exists()) {
       // Convert to package import path
-      final importPath = relativePath.replaceFirst('lib/', '');
+      final importPath = _toPosixImportPath(
+        relativePath.replaceFirst('lib/', ''),
+      );
       return 'package:$packageName/$importPath';
     }
   }
@@ -128,7 +135,8 @@ Future<String?> findStringsFile(String packagePath, String packageName) async {
       if (filename == 'strings.g.dart' || filename == 'translations.g.dart') {
         // Convert absolute path to package import
         final relativePath = p.relative(entity.path, from: p.join(packagePath, 'lib'));
-        return 'package:$packageName/$relativePath';
+        final importPath = _toPosixImportPath(relativePath);
+        return 'package:$packageName/$importPath';
       }
     }
   }
