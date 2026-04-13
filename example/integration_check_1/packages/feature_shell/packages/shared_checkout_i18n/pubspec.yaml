@@ -1,0 +1,16 @@
+name: shared_checkout_i18n
+description: Second nested slang-enabled package for the pvtro integration fixture.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  slang: ^4.8.1
+  slang_flutter: ^4.8.1
+
+flutter:
+  uses-material-design: false

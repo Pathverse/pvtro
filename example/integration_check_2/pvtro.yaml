@@ -1,0 +1,2 @@
+output: lib/generated/pvtro_wrapper.g.dart
+verbose: true

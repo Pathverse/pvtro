@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      pvtro|pvtro_builder:
+        enabled: true
+
+builders:
+  pvtro_builder:
+    import: "package:pvtro/builder.dart"
+    builder_factories: ["pvtroBuilder"]
+    build_extensions: {"pubspec.yaml": ["lib/pvtro.g.dart"]}
+    auto_apply: dependents
+    build_to: source

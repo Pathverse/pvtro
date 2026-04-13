@@ -1,0 +1,18 @@
+name: feature_shell_real
+description: First nested package for the real slang integration fixture.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  slang: ^4.14.0
+  slang_flutter: ^4.14.0
+  shared_checkout_i18n_real:
+    path: packages/shared_checkout_i18n_real
+
+flutter:
+  uses-material-design: false

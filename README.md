@@ -1,50 +1,29 @@
 # PVTRO
 
-**PathVerse Translation Orchestrator** - A CLI helper tool for multi-package Flutter apps using [slang](https://pub.dev/packages/slang).
+PVTRO generates a root integration file for multi-package Flutter apps that use [slang](https://pub.dev/packages/slang).
 
-## Overview
+It scans the active package graph, finds packages that expose generated `slang` translation layers, and emits:
 
-With slang 4.0+, locale synchronization across packages is handled natively via streams. PVTRO serves as a **helper and checker tool** rather than a complete solution—it assists with:
+- a nested `TranslationProvider` wrapper for the root app
+- a public `pvtroSyncPackageLocales(String rawLocale)` helper that forwards `LocaleSettings.setLocaleRaw` to every discovered package
 
-- 🔍 **Package Discovery**: Scans your project for slang-enabled packages
-- 🏗️ **Wrapper Generation**: Generates nested `TranslationProvider` wrappers
-- ✅ **Validation** (planned): Version compatibility and locale matching checks
+The same project config, `pvtro.yaml`, is used by both supported entrypoints:
 
-## Installation
+- `dart run pvtro`
+- `dart run build_runner build`
 
-Add to your `dev_dependencies`:
+If no translation layer is discovered, PVTRO performs a no-op and does not generate an output file.
 
-```yaml
-dev_dependencies:
-  pvtro:
-    path: ../path/to/pvtro  # or git/pub reference
-```
+## Generated API
 
-## Usage
-
-```bash
-# Generate TranslationProvider wrapper
-dart run pvtro
-
-# With options
-dart run pvtro --output lib/pvtro.g.dart --verbose
-```
-
-### CLI Options
-
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--output` | `-o` | Output file path (default: `lib/pvtro.g.dart`) |
-| `--verbose` | `-v` | Show detailed output |
-| `--help` | `-h` | Show help |
-
-## Generated Output
+For a project with three participating packages, PVTRO emits code shaped like this:
 
 ```dart
-import 'package:main_app/i18n/translations.g.dart' as _$0;
-import 'package:package_a/i18n/translations.g.dart' as _$1;
-import 'package:package_b/i18n/translations.g.dart' as _$2;
 import 'package:flutter/widgets.dart';
+
+import 'package:main_app/i18n/translations.g.dart' as _$0;
+import 'package:feature_shell/i18n/translations.g.dart' as _$1;
+import 'package:shared_checkout_i18n/i18n/translations.g.dart' as _$2;
 
 Widget pvtroWrapper({required Widget child}) {
   return _$0.TranslationProvider(
@@ -55,9 +34,85 @@ Widget pvtroWrapper({required Widget child}) {
     ),
   );
 }
+
+Future<void> pvtroSyncPackageLocales(String rawLocale) async {
+  await Future.wait([
+    _$0.LocaleSettings.setLocaleRaw(rawLocale),
+    _$1.LocaleSettings.setLocaleRaw(rawLocale),
+    _$2.LocaleSettings.setLocaleRaw(rawLocale),
+  ]);
+}
 ```
 
-### Using the Generated Wrapper
+Imports are emitted as `package:` imports with POSIX separators, including on Windows.
+
+## Installation
+
+Add PVTRO to the consuming project:
+
+```yaml
+dev_dependencies:
+  pvtro:
+    path: ../path/to/pvtro
+  build_runner: ^2.5.4
+```
+
+`build_runner` is only required if the consuming project wants builder-mode generation.
+
+## Shared Config
+
+Create `pvtro.yaml` at the root of the consuming project:
+
+```yaml
+output: lib/pvtro.g.dart
+verbose: false
+```
+
+Field meanings:
+
+- `output`: desired generated file path; PVTRO always generates the canonical artifact at `lib/pvtro.g.dart`, and if `output` differs it also writes the same content to the configured path
+- `verbose`: prints package discovery and generation details
+
+CLI flags override values loaded from `pvtro.yaml`.
+
+## Supported Flows
+
+### `dart run pvtro`
+
+Direct CLI mode reads `pvtro.yaml`, applies any explicit CLI overrides, and writes the generated wrapper to disk.
+
+```bash
+dart run pvtro
+dart run pvtro --verbose
+dart run pvtro --output lib/generated/pvtro_wrapper.g.dart
+```
+
+### `dart run build_runner build`
+
+Builder mode shares the same discovery logic and `pvtro.yaml` contract.
+
+Run it from the consuming project root:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+In builder mode, `lib/pvtro.g.dart` remains the canonical generated source asset. If `output` differs, the builder also emits the configured path as an additional source output.
+
+## Discovery Rules
+
+PVTRO treats a package as a translation layer when it detects `slang` support together with a generated `translations.g.dart` or `strings.g.dart` file under `lib/`.
+
+Discovery order is:
+
+1. root package first
+2. dependent packages after that, alphabetically
+
+The generated wrapper nests `TranslationProvider`s in that order.
+
+## App Usage
+
+Use the generated wrapper at app startup:
 
 ```dart
 void main() {
@@ -65,34 +120,44 @@ void main() {
 }
 ```
 
-## Changing Locale
-
-Use slang directly—all packages sync automatically:
+Use the generated sync helper when you need to push a raw locale string through every discovered package layer:
 
 ```dart
-LocaleSettings.setLocale(AppLocale.es);
+await pvtroSyncPackageLocales('en');
 ```
 
-## Roadmap
+## Examples
 
-- [x] Package discovery and wrapper generation
-- [ ] Slang version compatibility check across packages
-- [ ] Locale/language matching validation
-- [ ] Web source integration for local builds
+Start with [example/example.md](example/example.md).
 
-## Why "Helper Tool"?
+The repository includes two validated fixtures:
 
-Slang 4.11+ made significant improvements to multi-package locale sync. PVTRO doesn't replace slang—it **assists** by:
+- [example/integration_check_1/README.md](example/integration_check_1/README.md): stub-based nested package graph using the default output path
+- [example/integration_check_2/README.md](example/integration_check_2/README.md): real `slang` generation with a custom copied output target
 
-1. Automating the tedious `TranslationProvider` nesting
-2. Checking for potential issues across packages (planned)
-3. Bridging web translation sources to local builds (planned)
+`integration_check_2` is the authoritative end-to-end example for real usage.
+
+## CLI Options
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--output` | `-o` | Output file path |
+| `--verbose` | `-v` | Show discovery and generation progress |
+| `--help` | `-h` | Show help |
 
 ## Requirements
 
-- Dart SDK ^3.10.4
-- slang ^4.11.0 (in your project)
-- Flutter project with slang-enabled packages
+- Dart SDK 3.x
+- Flutter project structure for `TranslationProvider` integration
+- `slang` and `slang_flutter` in packages that should participate in orchestration
+
+## Roadmap
+
+Planned but not yet implemented:
+
+- slang version compatibility checks across discovered packages
+- locale coverage and mismatch warnings across package boundaries
+- web-source translation import workflows
 
 ## License
 

@@ -1,0 +1,18 @@
+name: feature_shell
+description: First nested slang-enabled package for the pvtro integration fixture.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  slang: ^4.8.1
+  slang_flutter: ^4.8.1
+  shared_checkout_i18n:
+    path: packages/shared_checkout_i18n
+
+flutter:
+  uses-material-design: false
