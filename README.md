@@ -66,12 +66,15 @@ Create `pvtro.yaml` at the root of the consuming project:
 ```yaml
 output: lib/pvtro.g.dart
 verbose: false
+excluded_packages:
+  - shadcn_ui
 ```
 
 Field meanings:
 
 - `output`: desired generated file path; PVTRO always generates the canonical artifact at `lib/pvtro.g.dart`, and if `output` differs it also writes the same content to the configured path
 - `verbose`: prints package discovery and generation details
+- `excluded_packages`: exact package names to skip during discovery, even if they contain a fake or stub `slang` wrapper
 
 CLI flags override values loaded from `pvtro.yaml`.
 
@@ -102,6 +105,8 @@ In builder mode, `lib/pvtro.g.dart` remains the canonical generated source asset
 ## Discovery Rules
 
 PVTRO treats a package as a translation layer when it detects `slang` support together with a generated `translations.g.dart` or `strings.g.dart` file under `lib/`.
+
+If a dependency should never be wrapped, add it to `excluded_packages` in `pvtro.yaml`.
 
 Discovery order is:
 

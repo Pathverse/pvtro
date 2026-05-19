@@ -60,7 +60,10 @@ Future<PvtroGenerationResult> generatePvtro({
 		logger?.call('Scanning for slang packages in $projectPath...');
 	}
 
-	final packages = await discoverSlangPackages(projectPath);
+	final packages = await discoverSlangPackages(
+		projectPath,
+		excludedPackages: config.excludedPackages,
+	);
 	if (config.verbose) {
 		logger?.call('Found ${packages.length} slang packages:');
 		for (final pkg in packages) {

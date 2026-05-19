@@ -1,3 +1,6 @@
+## 0.9.1
+- added exclusions
+
 ## 0.1.4
 - lower install requirements
 

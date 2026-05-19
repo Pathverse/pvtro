@@ -146,9 +146,13 @@ Future<String?> findStringsFile(String packagePath, String packageName) async {
 
 /// Scan all packages and return only those with slang implementations
 /// Returns packages sorted with main package first, then dependencies
-Future<List<SlangPackageInfo>> discoverSlangPackages(String projectPath) async {
+Future<List<SlangPackageInfo>> discoverSlangPackages(
+  String projectPath, {
+  Iterable<String> excludedPackages = const [],
+}) async {
   final allPackages = await getPackageConfig(projectPath);
   final slangPackages = <SlangPackageInfo>[];
+  final excludedPackageNames = excludedPackages.toSet();
   
   // Get the main package name from pubspec.yaml
   final mainPackageName = await _getMainPackageName(projectPath);
@@ -156,6 +160,8 @@ Future<List<SlangPackageInfo>> discoverSlangPackages(String projectPath) async {
   for (final pkg in allPackages) {
     // Skip pvtro itself
     if (pkg.name == 'pvtro') continue;
+
+    if (excludedPackageNames.contains(pkg.name)) continue;
 
     // Check if package has slang support
     if (!await hasSlangSupport(pkg.path)) continue;

@@ -44,6 +44,7 @@ void main() {
 
 			expect(config.output, PvtroConfig.defaultOutput);
 			expect(config.verbose, isFalse);
+			expect(config.excludedPackages, isEmpty);
 		});
 
 		test('merges CLI flags over pvtro.yaml defaults', () async {
@@ -55,10 +56,15 @@ void main() {
 			});
 
 			final configFile = File(p.join(tempDir.path, 'pvtro.yaml'));
-			await configFile.writeAsString('''
-output: lib/generated_wrapper.dart
-verbose: false
-''');
+			await configFile.writeAsString(
+				[
+					'output: lib/generated_wrapper.dart',
+					'verbose: false',
+					'excluded_packages:',
+					'  - shadcn_ui',
+					'  - fake_wrapper_pkg',
+				].join('\n'),
+			);
 
 			final baseConfig = await PvtroConfig.loadProjectConfig(tempDir.path);
 			final config = PvtroConfig.fromArgs(
@@ -68,6 +74,7 @@ verbose: false
 
 			expect(config.output, 'lib/generated_wrapper.dart');
 			expect(config.verbose, isTrue);
+			expect(config.excludedPackages, ['shadcn_ui', 'fake_wrapper_pkg']);
 		});
 	});
 
@@ -148,6 +155,7 @@ output_file_name: translations.g.dart
 					output: 'lib/generated/pvtro.g.dart',
 					verbose: false,
 					help: false,
+					excludedPackages: const [],
 				),
 				projectPath: tempDir.path,
 			);
@@ -162,6 +170,85 @@ output_file_name: translations.g.dart
 				File(p.join(tempDir.path, 'lib', 'generated', 'pvtro.g.dart')).existsSync(),
 				isTrue,
 			);
+		});
+
+		test('excludes configured packages from generation', () async {
+			final tempDir = await Directory.systemTemp.createTemp('pvtro_generate_');
+			addTearDown(() async {
+				if (await tempDir.exists()) {
+					await tempDir.delete(recursive: true);
+				}
+			});
+
+			await File(p.join(tempDir.path, 'pubspec.yaml')).writeAsString('''
+name: example_app
+environment:
+  sdk: ^3.0.0
+''');
+			await Directory(p.join(tempDir.path, '.dart_tool')).create();
+			await File(
+				p.join(tempDir.path, '.dart_tool', 'package_config.json'),
+			).writeAsString('''
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "example_app",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "shadcn_ui",
+      "rootUri": "../packages/shadcn_ui",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "feature_shell",
+      "rootUri": "../packages/feature_shell",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    }
+  ]
+}
+''');
+
+			await File(p.join(tempDir.path, 'slang.yaml')).writeAsString('''
+base_locale: en
+input_directory: lib/i18n
+output_directory: lib/i18n
+output_file_name: translations.g.dart
+''');
+			await File(
+				p.join(tempDir.path, 'lib', 'i18n', 'translations.g.dart'),
+			).create(recursive: true);
+
+			await File(p.join(tempDir.path, 'packages', 'shadcn_ui', 'slang.yaml')).create(recursive: true);
+			await File(
+				p.join(tempDir.path, 'packages', 'shadcn_ui', 'lib', 'i18n', 'translations.g.dart'),
+			).create(recursive: true);
+
+			await File(p.join(tempDir.path, 'packages', 'feature_shell', 'slang.yaml')).create(recursive: true);
+			await File(
+				p.join(tempDir.path, 'packages', 'feature_shell', 'lib', 'i18n', 'translations.g.dart'),
+			).create(recursive: true);
+
+			final result = await generatePvtro(
+				config: PvtroConfig(
+					output: PvtroConfig.defaultOutput,
+					verbose: false,
+					help: false,
+					excludedPackages: const ['shadcn_ui'],
+				),
+				projectPath: tempDir.path,
+			);
+
+			expect(result.hasTranslations, isTrue);
+			expect(result.packageCount, 2);
+			expect(result.content, contains('package:example_app/i18n/translations.g.dart'));
+			expect(result.content, contains('package:feature_shell/i18n/translations.g.dart'));
+			expect(result.content, isNot(contains('package:shadcn_ui/i18n/translations.g.dart')));
 		});
 	});
 

@@ -12,11 +12,13 @@ class PvtroConfig {
   final String output;
   final bool verbose;
   final bool help;
+  final List<String> excludedPackages;
 
   PvtroConfig({
     required this.output,
     required this.verbose,
     required this.help,
+    required this.excludedPackages,
   });
 
   /// Returns the default configuration when no overrides are provided.
@@ -25,6 +27,7 @@ class PvtroConfig {
       output: defaultOutput,
       verbose: false,
       help: false,
+      excludedPackages: const [],
     );
   }
 
@@ -41,6 +44,7 @@ class PvtroConfig {
           ? results['verbose'] as bool
           : defaults.verbose,
       help: results['help'] as bool,
+      excludedPackages: defaults.excludedPackages,
     );
   }
 
@@ -69,11 +73,13 @@ class PvtroConfig {
     String? output,
     bool? verbose,
     bool? help,
+    List<String>? excludedPackages,
   }) {
     return PvtroConfig(
       output: output ?? this.output,
       verbose: verbose ?? this.verbose,
       help: help ?? this.help,
+      excludedPackages: excludedPackages ?? this.excludedPackages,
     );
   }
 
@@ -92,6 +98,7 @@ class PvtroConfig {
       output: _readString(parsed, 'output') ?? defaultOutput,
       verbose: _readBool(parsed, 'verbose') ?? false,
       help: false,
+      excludedPackages: _readStringList(parsed, 'excluded_packages') ?? const [],
     );
   }
 
@@ -121,6 +128,27 @@ class PvtroConfig {
     }
 
     return value;
+  }
+
+  /// Reads a string list key from YAML and validates its type.
+  static List<String>? _readStringList(YamlMap yamlMap, String key) {
+    final value = yamlMap[key];
+    if (value == null) {
+      return null;
+    }
+
+    if (value is! YamlList) {
+      throw FormatException('pvtro.yaml key "$key" must be a list of strings.');
+    }
+
+    final result = <String>[];
+    for (final item in value) {
+      if (item is! String) {
+        throw FormatException('pvtro.yaml key "$key" must be a list of strings.');
+      }
+      result.add(item);
+    }
+    return result;
   }
 
   /// Get the argument parser
